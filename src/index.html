@@ -17,6 +17,12 @@
 <link rel="preload" href="fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" as="image" href="img/p15-1200.webp">
 <link rel="stylesheet" href="css/styles.css">
+<script>
+  /* Show the logo entrance once per session, never for reduced motion */
+  try {
+    if (!sessionStorage.getItem('bpb-intro') && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('intro');
+  } catch (e) {}
+</script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -38,6 +44,24 @@
 </script>
 </head>
 <body>
+<div class="intro-screen">
+  <div class="intro-rays" aria-hidden="true"></div>
+  <div class="intro-mark" aria-hidden="true">
+    <svg class="intro-badge" viewBox="-6 -6 112 112">
+      <defs><clipPath id="above-plate"><rect x="-6" y="-6" width="112" height="32"/></clipPath></defs>
+      <g clip-path="url(#above-plate)"><circle class="ib-sun" cx="50" cy="26" r="20" fill="#D7332A"/></g>
+      <g class="ib-rays" stroke="#D7332A" stroke-width="5" stroke-linecap="round" fill="none">
+        <path pathLength="1" d="M50 2v8"/><path pathLength="1" d="M25 11l5 6"/><path pathLength="1" d="M75 11l-5 6"/>
+      </g>
+      <path class="ib-plate" pathLength="1" d="M14 26h72a14 14 0 0 1 14 14v46a14 14 0 0 1-14 14H14A14 14 0 0 1 0 86V40a14 14 0 0 1 14-14z" stroke="#FFFFFF" stroke-width="3"/>
+      <text class="ib-text" x="50" y="76" text-anchor="middle" font-family="'Schibsted Grotesk',Arial,sans-serif" font-weight="900" font-size="32" letter-spacing="-1" fill="#1E7B3C">BPB</text>
+    </svg>
+    <p class="intro-word"><span style="--i:0">B</span><span style="--i:1">l</span><span style="--i:2">e</span><span style="--i:3">s</span><span style="--i:4">s</span><span style="--i:5">e</span><span style="--i:6">d</span><span style="--i:7">&nbsp;</span><span style="--i:8">P</span><span style="--i:9">r</span><span style="--i:10">i</span><span style="--i:11">n</span><span style="--i:12">c</span><span style="--i:13">e</span><span style="--i:14">&nbsp;</span><span style="--i:15">B</span><span style="--i:16">.</span></p>
+    <p class="intro-tag">Solar System <i>24/7 Light</i></p>
+  </div>
+  <button class="intro-skip" type="button">Skip intro</button>
+  <div class="intro-bar" aria-hidden="true"><span></span></div>
+</div>
 {{header}}
 
 <main id="main">
@@ -66,6 +90,8 @@
     </div>
   </section>
 
+  {{marquee:red}}
+
   <section class="proof" aria-label="Why people choose us">
     <div class="wrap proof-in">
       <div class="proof-item"><b>5.0 stars</b><span>Every Google review is five stars</span></div>
@@ -75,7 +101,7 @@
     </div>
   </section>
 
-  <section class="section" aria-labelledby="svc-title">
+  <section class="section violet" aria-labelledby="svc-title">
     <div class="wrap">
       <div class="head">
         <h2 id="svc-title">Everything that keeps your lights on.</h2>
@@ -163,7 +189,7 @@
     </div>
   </section>
 
-  <section class="section" aria-labelledby="reviews-title">
+  <section class="section gold" aria-labelledby="reviews-title">
     <div class="wrap">
       <div class="head">
         <h2 id="reviews-title">What our customers say.</h2>

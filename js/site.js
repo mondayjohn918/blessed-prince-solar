@@ -25,12 +25,36 @@
 
   /* Hero: the street light catches and the photo comes up out of the dark */
   const hero = $('.hero');
-  if (hero) {
+  const lightHero = () => {
+    if (!hero) return;
     const img = $('.lamp-scene img', hero);
     const light = () => doc.classList.add('lit');
     if (reduce || !img) light();
     else if (img.complete) setTimeout(light, 250);
     else { img.addEventListener('load', () => setTimeout(light, 150), { once: true }); setTimeout(light, 2500); }
+  };
+
+  /* Logo entrance: the head script adds .intro on the first Home visit of a session */
+  const intro = $('.intro-screen');
+  if (intro && doc.classList.contains('intro')) {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      doc.classList.add('intro-out');
+      setTimeout(() => {
+        doc.classList.remove('intro', 'intro-out');
+        intro.remove();
+        lightHero();
+      }, 900);
+    };
+    try { sessionStorage.setItem('bpb-intro', '1'); } catch (e) { /* storage blocked: the intro may replay */ }
+    $('.intro-skip', intro).addEventListener('click', finish);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') finish(); }, { once: true });
+    setTimeout(finish, 3100);
+  } else {
+    if (intro) intro.remove();
+    lightHero();
   }
 
   /* Reveal on scroll, used sparingly */

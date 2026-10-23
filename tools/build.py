@@ -57,7 +57,8 @@ def header(current: str) -> str:
 </header>"""
 
 
-FOOTER = f"""<footer class="site-footer">
+FOOTER = f"""{{{{marquee:plum}}}}
+<footer class="site-footer">
   <div class="wrap">
     <div class="foot-grid">
       <div>
@@ -135,10 +136,19 @@ def dial() -> str:
 </svg>"""
 
 
+def marquee(variant: str) -> str:
+    """Moving signboard band. The words come straight from the shop sign."""
+    words = ['<span>24/7 Light</span>', '<span class="serif">We install and sell</span>',
+             '<span>Prince Bishop</span>', '<span class="serif">God is Able</span>']
+    group = '<div class="marquee-group">' + ''.join(w + '<i></i>' for w in words) + '</div>'
+    return (f'<div class="marquee {variant}" aria-hidden="true"><div class="marquee-track">'
+            + group * 4 + '</div></div>')
+
+
 def build():
     for name in PAGES:
         html = (SRC / name).read_text(encoding="utf-8")
-        html = html.replace("{{header}}", header(name)).replace("{{footer}}", FOOTER).replace("{{dial}}", dial())
+        html = html.replace("{{header}}", header(name)).replace("{{footer}}", FOOTER).replace("{{dial}}", dial()).replace("{{marquee:red}}", marquee("red")).replace("{{marquee:plum}}", marquee("plum"))
         for key, svg in ICONS.items():
             html = html.replace("{{icon:" + key + "}}", svg)
         (ROOT / name).write_text(html, encoding="utf-8")
