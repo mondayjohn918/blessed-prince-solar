@@ -2,6 +2,7 @@
 
 Run:  py tools/build.py   (writes index.html, services.html, ... at the site root)
 """
+import hashlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -151,6 +152,10 @@ def build():
         html = html.replace("{{header}}", header(name)).replace("{{footer}}", FOOTER).replace("{{dial}}", dial()).replace("{{marquee:red}}", marquee("red")).replace("{{marquee:plum}}", marquee("plum"))
         for key, svg in ICONS.items():
             html = html.replace("{{icon:" + key + "}}", svg)
+        # Version the CSS and JS so browsers never pair a new page with an old cached file
+        for asset in ("css/styles.css", "js/site.js"):
+            v = hashlib.md5((ROOT / asset).read_bytes()).hexdigest()[:8]
+            html = html.replace(f'"{asset}"', f'"{asset}?v={v}"')
         (ROOT / name).write_text(html, encoding="utf-8")
         print("built", name)
 
