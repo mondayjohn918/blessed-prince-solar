@@ -27,7 +27,7 @@
   const hero = $('.hero');
   if (hero) {
     const img = $('.lamp-scene img', hero);
-    const light = () => requestAnimationFrame(() => doc.classList.add('lit'));
+    const light = () => doc.classList.add('lit');
     if (reduce || !img) light();
     else if (img.complete) setTimeout(light, 250);
     else { img.addEventListener('load', () => setTimeout(light, 150), { once: true }); setTimeout(light, 2500); }
