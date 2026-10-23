@@ -5,16 +5,20 @@
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const WA = 'https://wa.me/2347038895712?text=';
 
   $$('[data-year]').forEach(el => { el.textContent = new Date().getFullYear(); });
 
-  /* Mobile menu */
+  /* Menu: a full-screen sheet on phones */
   const menuBtn = $('.menu-btn');
   const nav = $('#site-nav');
   if (menuBtn && nav) {
+    const label = $('span', menuBtn);
     const setOpen = open => {
       nav.classList.toggle('open', open);
       menuBtn.setAttribute('aria-expanded', String(open));
+      if (label) label.textContent = open ? 'close' : 'menu';
+      doc.style.overflow = open ? 'hidden' : '';
     };
     menuBtn.addEventListener('click', () => setOpen(!nav.classList.contains('open')));
     document.addEventListener('keydown', e => {
@@ -23,16 +27,8 @@
     nav.addEventListener('click', e => { if (e.target.closest('a')) setOpen(false); });
   }
 
-  /* Hero: the street light catches and the photo comes up out of the dark */
-  const hero = $('.hero');
-  const lightHero = () => {
-    if (!hero) return;
-    const img = $('.lamp-scene img', hero);
-    const light = () => doc.classList.add('lit');
-    if (reduce || !img) light();
-    else if (img.complete) setTimeout(light, 250);
-    else { img.addEventListener('load', () => setTimeout(light, 150), { once: true }); setTimeout(light, 2500); }
-  };
+  /* The one signature move: the first photograph opens like a shutter */
+  const openShutters = () => $$('.shutter').forEach(el => el.classList.add('is-in'));
 
   /* Logo entrance: the head script adds .intro on the first Home visit of a session */
   const intro = $('.intro-screen');
@@ -42,109 +38,63 @@
       if (done) return;
       done = true;
       doc.classList.add('intro-out');
-      setTimeout(() => {
-        doc.classList.remove('intro', 'intro-out');
-        intro.remove();
-        lightHero();
-      }, 900);
+      setTimeout(openShutters, 350);
+      setTimeout(() => { doc.classList.remove('intro', 'intro-out'); intro.remove(); }, 1000);
     };
     try { sessionStorage.setItem('bpb-intro', '1'); } catch (e) { /* storage blocked: the intro may replay */ }
     $('.intro-skip', intro).addEventListener('click', finish);
     document.addEventListener('keydown', e => { if (e.key === 'Escape') finish(); }, { once: true });
-    setTimeout(finish, 3100);
+    setTimeout(finish, 2500);
   } else {
     if (intro) intro.remove();
-    lightHero();
+    requestAnimationFrame(() => setTimeout(openShutters, 120));
+    setTimeout(openShutters, 600);
   }
 
-  /* Reveal on scroll, used sparingly */
-  const reveals = $$('.reveal');
-  if (reveals.length && 'IntersectionObserver' in window && !reduce) {
+  /* Entrances: the parts of each section rise in once, in order */
+  const groups = $$('[data-in]');
+  if (groups.length && 'IntersectionObserver' in window && !reduce) {
     const io = new IntersectionObserver(entries => {
-      entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
-    }, { rootMargin: '0px 0px -10% 0px' });
-    reveals.forEach(el => io.observe(el));
-  } else reveals.forEach(el => el.classList.add('in'));
+      entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add('is-in'); io.unobserve(en.target); } });
+    }, { rootMargin: '0px 0px -12% 0px' });
+    groups.forEach(el => io.observe(el));
+  } else groups.forEach(el => el.classList.add('is-in'));
 
-  /* Services index: the arched photo follows the row you point at or tab to */
-  const svcList = $('.svc-list');
-  if (svcList) {
-    const imgs = $$('.svc-figure img');
-    const cap = $('.svc-figure figcaption');
-    const links = $$('a', svcList);
-    const show = i => {
-      imgs.forEach((im, j) => im.classList.toggle('on', j === i));
-      links.forEach((a, j) => a.classList.toggle('on', j === i));
-      if (cap && imgs[i]) cap.textContent = imgs[i].dataset.caption || '';
-    };
-    links.forEach((a, i) => {
-      a.addEventListener('mouseenter', () => show(i));
-      a.addEventListener('focus', () => show(i));
+  /* How 24/7 works: horizontal accordion (vertical on phones) */
+  $$('.acc').forEach(acc => {
+    const panels = $$('.acc-panel', acc);
+    const open = p => panels.forEach(q => {
+      const on = q === p;
+      q.classList.toggle('open', on);
+      $('.acc-btn', q).setAttribute('aria-expanded', String(on));
     });
-    show(0);
+    panels.forEach(p => $('.acc-btn', p).addEventListener('click', () => open(p)));
+  });
+
+  /* Photo strip drifts with the scroll, so nothing moves on its own */
+  const strip = $('.strip');
+  if (strip && !reduce) {
+    let ticking = false;
+    const move = () => {
+      ticking = false;
+      const r = strip.getBoundingClientRect();
+      const p = (window.innerHeight - r.top) / (window.innerHeight + r.height);
+      strip.style.transform = `translateX(${(-Math.min(1, Math.max(0, p)) * 18).toFixed(2)}%)`;
+    };
+    window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(move); } }, { passive: true });
+    move();
   }
 
-  /* The 24-hour scroll scene */
-  const day = $('.day');
-  if (day) {
-    const stages = $$('.stage', day);
-    if (reduce) {
-      day.classList.add('static');
-    } else {
-      const hand = $('#dial-hand', day);
-      const read = $('#dial-read', day);
-      const sub = $('#dial-sub', day);
-      const sunArc = $('#arc-sun', day);
-      const battArc = $('#arc-batt', day);
-      const sky = $('.day-sky', day);
-      const prog = $('.day-progress', day);
-      const R = 170, C = 2 * Math.PI * R;
-      // Hours on the dial run from 06:00 round to 06:00 the next morning.
-      const stops = [
-        [6, ['#2A1530', '#7A4A6B', '#E59A6B']],
-        [12, ['#3E3A86', '#5A6CC0', '#9DB4E8']],
-        [18, ['#2A1530', '#8C3F4F', '#E2774F']],
-        [24, ['#120914', '#1E0F24', '#2A1530']],
-        [30, ['#1E0F24', '#4A2650', '#C9786B']],
-      ];
-      const mix = (a, b, t) => {
-        const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
-        const ch = s => Math.round(((pa >> s) & 255) + (((pb >> s) & 255) - ((pa >> s) & 255)) * t);
-        return `rgb(${ch(16)},${ch(8)},${ch(0)})`;
-      };
-      const skyAt = h => {
-        let i = 0;
-        while (i < stops.length - 2 && h > stops[i + 1][0]) i++;
-        const [h0, c0] = stops[i], [h1, c1] = stops[i + 1];
-        const t = Math.min(1, Math.max(0, (h - h0) / (h1 - h0)));
-        return `linear-gradient(180deg, ${mix(c0[0], c1[0], t)} 0%, ${mix(c0[1], c1[1], t)} 60%, ${mix(c0[2], c1[2], t)} 100%)`;
-      };
-      const labels = ['Panels waking up', 'Panels carrying the house', 'Grid off, inverter on', 'Running on batteries'];
-      let ticking = false;
-      const update = () => {
-        ticking = false;
-        const r = day.getBoundingClientRect();
-        const total = r.height - window.innerHeight;
-        const p = Math.min(1, Math.max(0, -r.top / total));
-        const hour = 6 + p * 24;
-        const hh = Math.floor(hour) % 24, mm = Math.floor((hour % 1) * 60 / 15) * 15;
-        read.textContent = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
-        hand.setAttribute('transform', `rotate(${(hour - 12) / 24 * 360} 200 200)`);
-        // Noon sits at the top: the sun arc fills 06:00 to 18:00 over the top, the battery arc 18:00 to 06:00 underneath
-        const sunP = Math.min(1, Math.max(0, (hour - 6) / 12));
-        const battP = Math.min(1, Math.max(0, (hour - 18) / 12));
-        sunArc.style.strokeDasharray = `${C / 2 * sunP} ${C}`;
-        battArc.style.strokeDasharray = `${C / 2 * battP} ${C}`;
-        const idx = Math.min(stages.length - 1, Math.floor(p * stages.length));
-        stages.forEach((s, i) => s.classList.toggle('on', i === idx));
-        sub.textContent = labels[idx];
-        sky.style.setProperty('--sky', skyAt(hour));
-        prog.style.setProperty('--p', p.toFixed(4));
-      };
-      window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
-      window.addEventListener('resize', update);
-      update();
-    }
+  /* Quote bar: sends the visitor's answers to WhatsApp */
+  const bar = $('#quote-bar');
+  if (bar) {
+    bar.addEventListener('submit', e => {
+      e.preventDefault();
+      const name = bar.elements.name.value.trim();
+      const need = bar.elements.need.value;
+      const msg = `Hello Blessed Prince B,${name ? ` my name is ${name}.` : ''} I want ${need}. Please give me a quote.`;
+      window.open(WA + encodeURIComponent(msg), '_blank', 'noopener');
+    });
   }
 
   /* Projects: filter + lightbox */
@@ -169,16 +119,15 @@
     const lbCap = $('figcaption', lb);
     let current = 0;
     const visible = () => items.filter(it => !it.hidden);
-    const open = it => {
-      const im = $('img', it);
+    const show = it => {
       lbImg.src = it.dataset.full;
-      lbImg.alt = im.alt;
+      lbImg.alt = $('img', it).alt;
       lbCap.textContent = $('span', it).textContent;
       current = visible().indexOf(it);
       if (!lb.open) lb.showModal();
     };
-    items.forEach(it => it.addEventListener('click', () => open(it)));
-    const step = d => { const v = visible(); open(v[(current + d + v.length) % v.length]); };
+    items.forEach(it => it.addEventListener('click', () => show(it)));
+    const step = d => { const v = visible(); show(v[(current + d + v.length) % v.length]); };
     $('[data-lb="prev"]', lb).addEventListener('click', () => step(-1));
     $('[data-lb="next"]', lb).addEventListener('click', () => step(1));
     $('[data-lb="close"]', lb).addEventListener('click', () => lb.close());
@@ -195,26 +144,9 @@
     const rows = $$('[data-w]', calc);
     const hours = $('#night-hours');
     const hoursOut = $('#night-hours-out');
-    const out = {
-      load: $('#r-load'), kva: $('#r-kva'), batt: $('#r-batt'), panels: $('#r-panels'), wa: $('#r-wa'),
-    };
+    const out = { load: $('#r-load'), kva: $('#r-kva'), batt: $('#r-batt'), panels: $('#r-panels'), wa: $('#r-wa') };
     const sizes = [1.5, 2.5, 3.5, 5, 7.5, 10, 15, 20];
     const fmt = n => n.toLocaleString('en-NG');
-
-    rows.forEach(row => {
-      const o = $('output', row);
-      const [minus, plus] = $$('button', row);
-      const set = v => {
-        v = Math.max(0, Math.min(20, v));
-        o.value = o.textContent = v;
-        minus.disabled = v === 0;
-        compute();
-      };
-      minus.addEventListener('click', () => set(+o.value - 1));
-      plus.addEventListener('click', () => set(+o.value + 1));
-      minus.disabled = +o.value === 0;
-    });
-    hours.addEventListener('input', compute);
 
     function compute() {
       let watts = 0, motor = 0;
@@ -231,7 +163,7 @@
       hoursOut.textContent = `${h} hours`;
       out.load.textContent = `${fmt(watts)} W if everything runs at once`;
       if (!watts) {
-        out.kva.textContent = out.batt.textContent = out.panels.textContent = '–';
+        out.kva.textContent = out.batt.textContent = out.panels.textContent = '0';
       } else {
         // Inverter: 25% headroom over the running load, or room for the biggest motor
         // (AC, fridge, pump) to start, whichever is more; 0.8 power factor
@@ -244,15 +176,30 @@
         // Panels: refill the batteries plus run half the load for 6 daylight hours, ~4.5 sun hours, 550 W panels
         const dayKwh = nightKwh + watts * 0.5 * 6 / 1000;
         const panels = Math.max(2, Math.ceil(dayKwh / (0.55 * 4.5 * 0.8)));
-        out.kva.textContent = need > 20 ? '20+ kVA' : `${kva} kVA`;
+        out.kva.textContent = need > 20 ? '20+' : `${kva}`;
         out.batt.textContent = `${batts}`;
         out.panels.textContent = `${panels}`;
       }
       const msg = watts
-        ? `Hello Blessed Prince B, I used the size guide on your website.\n\nI want to power: ${picked.join(', ')}.\nThrough the night for about ${h} hours.\nThe guide suggested ${out.kva.textContent}, ${out.batt.textContent} batteries and ${out.panels.textContent} panels.\n\nPlease give me a quote.`
+        ? `Hello Blessed Prince B, I used the size guide on your website.\n\nI want to power: ${picked.join(', ')}.\nThrough the night for about ${h} hours.\nThe guide suggested ${out.kva.textContent} kVA, ${out.batt.textContent} batteries and ${out.panels.textContent} panels.\n\nPlease give me a quote.`
         : 'Hello Blessed Prince B, I want a quote for a solar system.';
-      out.wa.href = `https://wa.me/2347038895712?text=${encodeURIComponent(msg)}`;
+      out.wa.href = WA + encodeURIComponent(msg);
     }
+
+    rows.forEach(row => {
+      const o = $('output', row);
+      const [minus, plus] = $$('button', row);
+      const set = v => {
+        v = Math.max(0, Math.min(20, v));
+        o.value = o.textContent = v;
+        minus.disabled = v === 0;
+        compute();
+      };
+      minus.addEventListener('click', () => set(+o.value - 1));
+      plus.addEventListener('click', () => set(+o.value + 1));
+      minus.disabled = +o.value === 0;
+    });
+    hours.addEventListener('input', compute);
     compute();
   }
 })();
